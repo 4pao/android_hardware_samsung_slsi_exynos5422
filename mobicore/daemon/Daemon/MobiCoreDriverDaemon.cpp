@@ -40,6 +40,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/resource.h>
 
 #include "mcVersion.h"
 #include "mcVersionHelper.h"
@@ -1349,7 +1350,14 @@ int main(int argc, char *args[])
         // obtain a new process group */
         setsid();
         /* close all descriptors */
-        for (i = getdtablesize(); i >= 0; --i) {
+        struct rlimit r;
+
+        if (getrlimit(RLIMIT_NOFILE, &r) < 0) {
+            i = sysconf(_SC_OPEN_MAX);
+        } else
+            i = r.rlim_cur;
+
+        for (; i >= 0; --i) {
             close(i);
         }
         // STDIN, STDOUT and STDERR should all point to /dev/null */
